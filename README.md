@@ -1,5 +1,5 @@
 # NFT Collection
-Live Demo: 
+Live Demo: https://kenkaboshcodes.github.io/celo-nft-marketplace/
 
 # Desciption
 Welcome to NFT Collection, a web application enable user to create their own NFTs, also list NFTs into the marketplace to sell, update price, remove from the marketplace. This project was built as part of a coding challenge and serves as a showcase for my coding abilities.
