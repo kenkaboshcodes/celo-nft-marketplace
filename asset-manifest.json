@@ -1,0 +1,26 @@
+{
+  "files": {
+    "main.css": "/celo-nft-marketplace/static/css/main.2fccecbd.chunk.css",
+    "main.js": "/celo-nft-marketplace/static/js/main.91b90c1b.chunk.js",
+    "main.js.map": "/celo-nft-marketplace/static/js/main.91b90c1b.chunk.js.map",
+    "runtime-main.js": "/celo-nft-marketplace/static/js/runtime-main.03601ee5.js",
+    "runtime-main.js.map": "/celo-nft-marketplace/static/js/runtime-main.03601ee5.js.map",
+    "static/css/2.2ab1dbee.chunk.css": "/celo-nft-marketplace/static/css/2.2ab1dbee.chunk.css",
+    "static/js/2.31237356.chunk.js": "/celo-nft-marketplace/static/js/2.31237356.chunk.js",
+    "static/js/2.31237356.chunk.js.map": "/celo-nft-marketplace/static/js/2.31237356.chunk.js.map",
+    "static/js/3.6931bb0d.chunk.js": "/celo-nft-marketplace/static/js/3.6931bb0d.chunk.js",
+    "static/js/3.6931bb0d.chunk.js.map": "/celo-nft-marketplace/static/js/3.6931bb0d.chunk.js.map",
+    "index.html": "/celo-nft-marketplace/index.html",
+    "static/css/2.2ab1dbee.chunk.css.map": "/celo-nft-marketplace/static/css/2.2ab1dbee.chunk.css.map",
+    "static/css/main.2fccecbd.chunk.css.map": "/celo-nft-marketplace/static/css/main.2fccecbd.chunk.css.map",
+    "static/js/2.31237356.chunk.js.LICENSE.txt": "/celo-nft-marketplace/static/js/2.31237356.chunk.js.LICENSE.txt",
+    "static/media/bootstrap-icons.css": "/celo-nft-marketplace/static/media/bootstrap-icons.b2e5aab6.woff2"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.03601ee5.js",
+    "static/css/2.2ab1dbee.chunk.css",
+    "static/js/2.31237356.chunk.js",
+    "static/css/main.2fccecbd.chunk.css",
+    "static/js/main.91b90c1b.chunk.js"
+  ]
+}
