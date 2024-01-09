@@ -6,10 +6,18 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract MyNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
+contract MyNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable, AccessControl {
     // contract inherits from ERC721, ERC721Enumerable, ERC721URIStorage and Ownable contracts
     using Counters for Counters.Counter;
+
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+
+    constructor() ERC721("MyNFT", "MNFT") {
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _setupRole(MINTER_ROLE, _msgSender());
+    }
 
     struct ListedNFT {
         // struct to store NFT details for sale
@@ -63,14 +71,19 @@ contract MyNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         _;
     }
 
-    //function to create a new NFT     
-    function createNft(address to, string calldata uri) public {
+    // Function to create a new NFT with access control and flexible URI handling
+    function createNft(address to, string calldata uri) public onlyRole(MINTER_ROLE) {
         require(to != address(0), "Address zero is not a valid minter address");
-        require(bytes(uri).length > 0, "Empty uri");
+        require(bytes(uri).length > 0, "Empty URI");
+
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
-        _safeMint(to, tokenId); // mint a new NFT and assign it to the given address
-        _setTokenURI(tokenId, uri); // set the URI of the NFT
+
+        _safeMint(to, tokenId);
+        _setTokenURI(tokenId, uri);
+
+        // Emitting event for tracking
+        emit Transfer(address(0), to, tokenId);
     }
 
     //function to list NFT into the marketplace 
@@ -95,37 +108,41 @@ contract MyNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         emit NftListingCancelled(tokenId, msg.sender);
     }
 
-    //function to update price of NFT
-    function updateListing(
-        uint256 tokenId,
-        uint256 newPrice
-    ) public isListed(tokenId) isOwner(tokenId, msg.sender) {
-        require(newPrice > 0, "Invalid new price");
-        _activeItem[tokenId].price = newPrice;
+    // Function to update the price of a listed NFT with validation
+function updateListing(uint256 tokenId, uint256 newPrice) public isListed(tokenId) isOwner(tokenId, msg.sender) {
+    require(newPrice > 0, "Invalid new price");
+    
+    // Ensure that the new price is different from the existing price
+    require(_activeItem[tokenId].price != newPrice, "New price must be different");
 
-        emit NftListingUpdated(
-            _activeItem[tokenId].price,
-            msg.sender,
-            newPrice
-        );
+    _activeItem[tokenId].price = newPrice;
+
+    emit NftListingUpdated(tokenId, msg.sender, newPrice);
+}
     }
 
-    /// function to transfer NFT ownership when someone buy it
-    function buyNft(uint256 tokenId) public payable isListed(tokenId) {
-        ListedNFT storage currentNft = _activeItem[tokenId];
-        require(msg.sender != currentNft.seller, "Can Not buy your own NFT");
+// Function to allow a user to buy a listed NFT with reentrancy guard and value check
+function buyNft(uint256 tokenId) public payable isListed(tokenId) nonReentrant {
+    ListedNFT storage currentNft = _activeItem[tokenId];
 
-        require(msg.value == currentNft.price, "Not enough money!");
-        address seller = currentNft.seller;
-        delete _activeItem[tokenId]; // when buy successfully, the new owner need to list again that it could be in the marketplace
-        _transfer(seller, msg.sender, tokenId);
+    // Ensure the buyer is not the seller
+    require(msg.sender != currentNft.seller, "Cannot buy your own NFT");
 
-        // Send the correct amount of wei to the seller
-        (bool success, ) = payable(seller).call{value: msg.value}("");
-        require(success, "Payment failed");
+    // Ensure the sent value is equal to the listed price
+    require(msg.value == currentNft.price, "Incorrect payment amount");
 
-        emit NftBought(tokenId, seller, msg.sender, msg.value);
-    }
+    // Transfer ownership of the NFT to the buyer
+    address seller = currentNft.seller;
+    delete _activeItem[tokenId];
+    _transfer(seller, msg.sender, tokenId);
+
+    // Send the correct amount of wei to the seller
+    (bool success, ) = payable(seller).call{value: msg.value}("");
+    require(success, "Payment failed");
+
+    emit NftBought(tokenId, seller, msg.sender, msg.value);
+}
+
 
     // The following functions are overrides required by Solidity.
 
@@ -158,12 +175,11 @@ contract MyNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         return super.supportsInterface(interfaceId);
     }
 
-    // function to get the array that store item that listed
-    function getActiveItem(
-        uint256 tokenId
-    ) public view returns (ListedNFT memory) {
-        return _activeItem[tokenId];
-    }
+// Function to get information about a listed NFT based on its token ID with existence check
+function getActiveItem(uint256 tokenId) public view returns (ListedNFT memory) {
+    require(_exists(tokenId), "Token ID does not exist");
+    return _activeItem[tokenId];
+}
 
         /**
      * @dev See {IERC721-transferFrom}.
