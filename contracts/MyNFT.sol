@@ -10,47 +10,97 @@ contract NFTMarketplace is ERC721, Ownable {
         bool isListed;
     }
 
-    mapping(uint256 => ListedNFT) private _activeItems;
+    mapping(uint256 => ListedNFT) private _activeItem;
 
     event NFTListed(uint256 indexed tokenId, uint256 price);
     event NFTUnlisted(uint256 indexed tokenId);
-    event NFTListingUpdated(uint256 indexed tokenId, uint256 newPrice);
-    event NFTListingCancelled(uint256 indexed tokenId);
-    event NFTBought(uint256 indexed tokenId, address indexed buyer, uint256 price);
 
     constructor(string memory name, string memory symbol) ERC721(name, symbol) {}
-// list nft in the market place
+
+    /**
+     * @dev Function to list an NFT for sale.
+     * @param tokenId The ID of the NFT to be listed.
+     * @param price The sale price of the NFT.
+     */
     function listNFT(uint256 tokenId, uint256 price) external onlyOwner {
-        require(!_activeItems[tokenId].isListed, "NFT is already listed");
-        _activeItems[tokenId] = ListedNFT(price, true);
+        require(!_activeItem[tokenId].isListed, "NFT is already listed");
+        _activeItem[tokenId] = ListedNFT(price, true);
         emit NFTListed(tokenId, price);
     }
-// updare the list 
+
+    /**
+     * @dev Function to update the listing of an NFT.
+     * @param tokenId The ID of the NFT to be updated.
+     * @param price The new sale price of the NFT.
+     */
     function updateListing(uint256 tokenId, uint256 price) external onlyOwner {
-        require(_activeItems[tokenId].isListed, "NFT is not listed");
-        _activeItems[tokenId].price = price;
-        emit NFTListingUpdated(tokenId, price);
+        require(_activeItem[tokenId].isListed, "NFT is not listed");
+        _activeItem[tokenId].price = price;
+        emit NFTListed(tokenId, price); // Emits the same event as listing for simplicity
     }
-// unlist NFT 
+
+    /**
+     * @dev Function to unlist an NFT for sale.
+     * @param tokenId The ID of the NFT to be unlisted.
+     */
     function unlistNFT(uint256 tokenId) external onlyOwner {
-        require(_activeItems[tokenId].isListed, "NFT is not listed");
-        delete _activeItems[tokenId];
+        require(_activeItem[tokenId].isListed, "NFT is not listed");
+        delete _activeItem[tokenId];
         emit NFTUnlisted(tokenId);
     }
-// buy NFT
+
+    /**
+     * @dev Function to buy an NFT listed for sale.
+     * @param tokenId The ID of the NFT to be purchased.
+     */
     function buyNFT(uint256 tokenId) external payable {
-        require(_activeItems[tokenId].isListed, "NFT is not listed for sale");
-        require(msg.value == _activeItems[tokenId].price, "Incorrect amount sent");
+        ListedNFT storage nft = _activeItem[tokenId];
+        require(nft.isListed, "NFT is not listed for sale");
+        require(msg.value == nft.price, "Incorrect amount sent");
 
         address seller = ownerOf(tokenId);
         address buyer = msg.sender;
 
         _transfer(seller, buyer, tokenId);
-        _activeItems[tokenId].isListed = false;
+        nft.isListed = false;
 
-// Transfer funds to the seller
+        // Transfer funds to the seller
         payable(seller).transfer(msg.value);
+    }
 
-        emit NFTBought(tokenId, buyer, msg.value);
+    /**
+     * @dev Function to get the details of an NFT listed for sale.
+     * @param tokenId The ID of the NFT.
+     * @return Details of the listed NFT.
+     */
+    function getActiveItem(uint256 tokenId) public view returns (ListedNFT memory) {
+        return _activeItem[tokenId];
+    }
+
+    /**
+     * @dev See {IERC721-transferFrom}.
+     * Changes are made to transferFrom to prevent transfers of a listed NFT.
+     */
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public override(ERC721) {
+        require(!_activeItem[tokenId].isListed, "You can't transfer a listed NFT");
+        super.transferFrom(from, to, tokenId);
+    }
+
+    /**
+     * @dev See {IERC721-safeTransferFrom}.
+     * Changes are made to safeTransferFrom to prevent transfers of a listed NFT.
+     */
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) public override(ERC721) {
+        require(!_activeItem[tokenId].isListed, "You can't transfer a listed NFT");
+        _safeTransfer(from, to, tokenId, data);
     }
 }
